@@ -6,7 +6,7 @@ script_dir_path="$(dirname -- "$0")"
 declare script_dir
 script_dir="$(realpath "$script_dir_path")"
 
-source "$script_dir"/functions.sh
+source "$script_dir"/fedoraTilingFunctions.sh
 
 # Menu for selecting the installation steps
 while true; do
@@ -44,8 +44,10 @@ while true; do
     echo '17. Install and enable firewalld'
     echo '18. Configure swappiness'
     echo '19. Speed up boot time'
+    echo '20. Install Docker'
+    echo '21. Install VirtualBox'
     echo
-    echo '20. Execute all steps'
+    echo '22. Execute all steps'
     echo '0.  Exit'
     echo
     echo -n 'Enter the number of your choice: '
@@ -128,8 +130,16 @@ while true; do
         19) 
             speed_up_boot_time
             ;;
-        
+
         20)
+            install_docker
+            ;;
+
+        21)
+            install_virtualbox
+            ;;
+        
+        22)
             echo 'Executing all setup steps...'
             echo
             backup_configs
@@ -152,6 +162,8 @@ while true; do
             install_firewalld_enable
             configure_swappiness
             speed_up_boot_time
+            install_docker
+            install_virtualbox
             echo
             echo 'All setup steps completed!'
             ;;

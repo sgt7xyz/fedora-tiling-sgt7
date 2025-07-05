@@ -160,39 +160,7 @@ install_vlc_restricted_extras() {
     echo 'VLC and multimedia codecs installed successfully!'
 }
 
-#15 Install and enable firewalld.
-install_firewalld_enable() {
-    # Fedora typically uses firewalld instead of ufw
-    sudo dnf -y install firewalld
-    sudo systemctl enable firewalld
-    sudo systemctl start firewalld
-    sudo firewall-cmd --state
-    echo 'Firewalld installed and enabled successfully!'
-    echo 'Note: Fedora uses firewalld instead of ufw. Use firewall-cmd for configuration.'
-}
-
-#16 Configure swappiness
-configure_swappiness() {
-    echo 'Swappiness before configuration:'
-    cat /proc/sys/vm/swappiness
-    sudo /bin/su -c "echo 'vm.swappiness = 10' > /etc/sysctl.d/swappiness.conf"
-    sudo sysctl -f /etc/sysctl.d/swappiness.conf
-    echo 'Swappiness after configuration:'
-    sudo sysctl -a | grep vm.swappiness
-    echo 'Swappiness configured successfully!'
-}
-
-#17 Speed up boot time
-speed_up_boot_time() {
-    sudo cp /etc/default/grub /etc/default/grub.original
-    sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=0/g' /etc/default/grub
-    # Fedora uses grub2-mkconfig instead of update-grub
-    sudo grub2-mkconfig -o /boot/grub2/grub.cfg
-    sudo grep GRUB_TIMEOUT /etc/default/grub
-    echo 'Boot time speed configured successfully!'
-}
-
-#18 Install VSCode
+#15 Install VSCode
 install_vscode() {
     echo 'Setting up VSCode repository...'
     sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
@@ -205,7 +173,7 @@ install_vscode() {
     echo 'VSCode installed successfully!'
 }
 
-#19 Configure Git
+#16 Configure Git
 configure_git() {
     if [ -f configs/.gitignore_global ]; then
         cp configs/.gitignore_global ~/
@@ -219,4 +187,109 @@ configure_git() {
     git config --global core.excludesfile ~/.gitignore_global
     git config --global --list
     echo 'Base configuration for Git completed. Ensure you set your username and email!'
+}
+
+#17 Install and enable firewalld.
+install_firewalld_enable() {
+    # firewalld is usually pre-installed on Fedora, but install if missing
+    sudo dnf -y install firewalld
+    sudo dnf -y install firewall-config
+    
+    # Enable and start firewalld service
+    sudo systemctl enable firewalld
+    sudo systemctl start firewalld
+    
+    # Show status and current zones
+    sudo firewall-cmd --state
+    sudo firewall-cmd --get-default-zone
+    sudo firewall-cmd --list-all
+    
+    echo 'firewalld installed and enabled successfully!'
+}
+
+#18 Configure swappiness
+configure_swappiness() {
+    echo 'Swappiness before configuration:'
+    cat /proc/sys/vm/swappiness
+    sudo /bin/su -c "echo 'vm.swappiness = 10' > /etc/sysctl.d/swappiness.conf"
+    sudo sysctl -f /etc/sysctl.d/swappiness.conf
+    echo 'Swappiness after configuration:'
+    sudo sysctl -a | grep vm.swappiness
+    echo 'Swappiness configured successfully!'
+}
+
+#19 Speed up boot time
+speed_up_boot_time() {
+    sudo cp /etc/default/grub /etc/default/grub.original
+    sudo sed -i 's/GRUB_TIMEOUT=5/GRUB_TIMEOUT=2/g' /etc/default/grub
+    # Fedora uses grub2-mkconfig instead of update-grub
+    sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+    sudo grep GRUB_TIMEOUT /etc/default/grub
+    echo 'Boot time speed configured successfully!'
+}
+
+#20 Install Docker.
+install_docker() {
+    # Remove old Docker versions
+    sudo dnf remove -y \
+        docker \
+        docker-client \
+        docker-client-latest \
+        docker-common \
+        docker-latest \
+        docker-latest-logrotate \
+        docker-logrotate \
+        docker-selinux \
+        docker-engine-selinux \
+        docker-engine
+    echo 'Old Docker versions removed.'
+
+    # Set up the Docker repository
+    sudo dnf -y install dnf-plugins-core
+    sudo dnf-3 config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+
+    # Install Docker
+    sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    echo 'Docker installed successfully!'
+
+    #Enable and start Docker service
+    sudo systemctl enable docker
+    sudo systemctl start docker
+
+    # Add your user to the docker group
+    sudo usermod -aG docker "$USER"
+    echo 'User added to the docker group. You need to reboot in order for this to take effect.'
+}
+
+#21 Install VirtualBox.
+install_virtualbox() {
+
+    #Install VirtualBox dependencies
+    sudo dnf install @development-tools
+    sudo dnf install kernel-headers kernel-devel dkms
+
+    # Import Oracle public key
+    wget -q https://www.virtualbox.org/download/oracle_vbox_2016.asc -O- | sudo rpm --import -
+    echo 'Oracle public key imported.'
+
+    # Add VirtualBox Fedora repository
+    sudo sh -c 'cat > /etc/yum.repos.d/virtualbox.repo <<EOF
+[virtualbox]
+name=Fedora $releasever - $basearch - VirtualBox
+baseurl=http://download.virtualbox.org/virtualbox/rpm/fedora/\$releasever/\$basearch
+enabled=1
+gpgcheck=1
+repo_gpgcheck=1
+gpgkey=https://www.virtualbox.org/download/oracle_vbox_2016.asc
+EOF'
+ 
+    echo 'VirtualBox Fedora repository added successfully.'    
+    
+    # Install VirtualBox
+    sudo dnf -y install VirtualBox-7.1
+    echo 'VirtualBox installed successfully!'
+
+    # Add the user to the vboxusers group
+    sudo usermod -aG vboxusers "$USER"
+    echo 'User added to the vboxusers group. You may need to log out and log back in for this to take effect.'
 }
